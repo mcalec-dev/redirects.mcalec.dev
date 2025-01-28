@@ -1,47 +1,59 @@
 function redirectIfQueryIsLink() {
   const urlParams = new URLSearchParams(window.location.search);
-  
-  // List of query parameters to check
   const paramsToCheck = ['redirect', 'url', 'link', 'target'];
   
   for (const paramName of paramsToCheck) {
       const value = urlParams.get(paramName);
-      
-      if (value && isValidLink(value)) {
-          try {
-              const validatedUrl = new URL(value);
-              window.location.href = validatedUrl.toString();
+      if (value) {
+          const processedUrl = processUrl(value);
+          if (processedUrl) {
+              window.location.href = processedUrl;
               return true;
-          } catch (error) {
-              console.warn('Invalid URL attempted:', value);
           }
       }
   }
-  
   return false;
 }
 
-function isValidLink(str) {
-  const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-  return urlPattern.test(str) && isValidUrl(str);
-}
+function processUrl(input) {
+  // Remove any whitespace
+  input = input.trim();
 
-function isValidUrl(string) {
+  // Check if it's already a valid URL
   try {
-      const url = new URL(string);
-      return ['http:', 'https:'].includes(url.protocol);
+      new URL(input);
+      return input;
   } catch {
-      return false;
+      // Not a valid URL, let's process it
   }
+
+  // Check if it matches a domain pattern
+  const domainPattern = /^([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
+  if (domainPattern.test(input)) {
+      return `https://${input}`;
+  }
+
+  // If it starts with www., add https://
+  if (input.startsWith('www.')) {
+      return `https://${input}`;
+  }
+
+  // Check if it might be a domain without protocol
+  if (input.includes('.') && !input.includes(' ') && !input.includes('http')) {
+      return `https://${input}`;
+  }
+
+  return null;
 }
 
-// Function for the manual redirect button
 function manualRedirect() {
-  const url = document.getElementById('urlInput').value;
-  if (isValidLink(url)) {
-      window.location.href = url;
+  const input = document.getElementById('urlInput').value;
+  const processedUrl = processUrl(input);
+  
+  if (processedUrl) {
+      window.location.href = processedUrl;
   } else {
-      alert('Please enter a valid URL');
+      alert('Please enter a valid domain or URL');
   }
 }
 
